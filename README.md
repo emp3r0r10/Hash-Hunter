@@ -41,18 +41,18 @@ python3 Hash-Hunter.py
 
 The script supports the following hash algorithms:
 
-1. md5
-2. sha1
-3. sha224
-4. sha256
-5. sha384
-6. sha512
-7. blake2b
-8. blake2s
-9. sha3_224
-10. sha3_256
-11. sha3_384
-12. sha3_512
+1. MD5
+2. SHA1
+3. SHA224
+4. SHA256
+5. SHA384
+6. SHA512
+7. SHA3_224
+8. SHA3_256
+9. SHA3_384
+10. SHA3_512
+11. blake2b
+12. blake2s
 13. NTLM
 14. Argon2
 15. Whirlpool
