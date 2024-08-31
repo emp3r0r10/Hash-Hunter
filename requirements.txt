@@ -1,4 +1,8 @@
 bcrypt
+hashlib
+argparse
 colorama
 pycryptodome
-argparse
+whirlpool_hash
+argon2-cffi
+passlib

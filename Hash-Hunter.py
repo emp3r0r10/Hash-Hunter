@@ -1,34 +1,15 @@
 import bcrypt, sys
-import hashlib
+import hashlib, binascii
 import re
 import argparse
 from colorama import Fore, Back, Style, init
 from Crypto.Hash import MD4
+import whirlpool
+from argon2 import PasswordHasher
+from base64 import b64decode
+from passlib.utils.binary import ab64_encode
 
 # ===============================================================================================
-# Detect Hash Type
-hash_pattern = {
-    "MD5": {"length": 32, "pattern": r"^[a-fA-F0-9]{32}$"},
-    "SHA-1": {"length": 40, "pattern": r"^[a-fA-F0-9]{40}$"},
-    "SHA-256": {"length": 64, "pattern": r"^[a-fA-F0-9]{64}$"},
-    "SHA-512": {"length": 128, "pattern": r"^[a-fA-F0-9]{128}$"},
-    "SHA-3-256": {"length": 64, "pattern": r"^[a-fA-F0-9]{64}$"},
-    "SHA-3-512": {"length": 128, "pattern": r"^[a-fA-F0-9]{128}$"},
-    "CRC32": {"length": 8, "pattern": r"^[a-fA-F0-9]{8}$"},
-    "LM": {"length": 32, "pattern": r"^[a-fA-F0-9]{32}$"},
-    "bcrypt": {"length": 60, "pattern": r"^\$2[ayb]\$.{56}$"},
-    "pbkdf2-sha256": {"length": None, "pattern": r"^sha256:\d+:[a-fA-F0-9]{64}:[a-fA-F0-9]{64}$"},
-    "Argon2": {"length": None, "pattern": r"^\$argon2(id|d|i)\$v=\d+\$.*$"},
-    "RIPEMD-160": {"length": 40, "pattern": r"^[a-fA-F0-9]{40}$"},
-    "Whirlpool": {"length": 128, "pattern": r"^[a-fA-F0-9]{128}$"},
-    "GOST R 34.11-94": {"length": 64, "pattern": r"^[a-fA-F0-9]{64}$"},
-    "SM3": {"length": 64, "pattern": r"^[a-fA-F0-9]{64}$"},
-    "BLAKE2s-256": {"length": 64, "pattern": r"^[a-fA-F0-9]{64}$"},
-    "BLAKE2b-512": {"length": 128, "pattern": r"^[a-fA-F0-9]{128}$"},
-}
-
-# ===============================================================================================
-
 # Hash Word
 def hash_word(word, hash_type):
     try:
@@ -36,6 +17,17 @@ def hash_word(word, hash_type):
             salt = bcrypt.gensalt()
             h = bcrypt.hashpw(word.encode('utf-8'), salt)
             print(Fore.GREEN + h.decode())
+        elif hash_type == "NTLM":
+            h = hashlib.new('md4', word.encode('utf-16le')).digest()
+            print(Fore.GREEN, end="")
+            print(binascii.hexlify(h).upper())
+        elif hash_type == "Argon2":
+            ph = PasswordHasher()
+            h = ph.hash(word)
+            print(h)
+        elif hash_type == "whirlpool":
+            h = whirlpool.new(word.encode('utf-8')).hexdigest()
+            print(h)
         else:
             hash_func = getattr(hashlib, hash_type)
             h = hash_func(word.encode('utf-8')).hexdigest()
@@ -46,10 +38,35 @@ def hash_word(word, hash_type):
 # ===============================================================================================
 # Detect Hash
 def detect_hash_type(hash_string):
-    for hash_type, properties in hash_pattern.items():
-        if len(hash_string) == properties["length"] and re.match(properties["pattern"], hash_string):
-            return hash_type
-    return "Unknown Hash"
+
+    if len(hash_string) == 32:
+        if all(c in '0123456789ABCDEF' for c in hash_string):
+            return 'NTLM'
+        return 'MD5'
+    if len(hash_string) == 128:
+        if hash_string.upper() and all(c in '0123456789ABCDEF' for c in hash_string): 
+            return "whirlpool"
+        return "SHA-512"
+    # Add other hash types as needed
+    elif len(hash_string) == 40 and re.match(r"^[a-fA-F0-9]{40}$", hash_string):
+        return "RIPEMD-160"
+    elif len(hash_string) == 56 and re.match(r"^[a-fA-F0-9]{56}$", hash_string):
+        return "SHA-224"  # Example, adapt as needed
+    elif len(hash_string) == 64 and re.match(r"^[a-fA-F0-9]{64}$", hash_string):
+        return "SHA-256"
+    elif len(hash_string) == 96 and re.match(r"^[a-fA-F0-9]{96}$", hash_string):
+        return "SHA-384"
+       
+    elif re.match(r"^\$2[ayb]\$.{56}$", hash_string):
+        return "bcrypt"
+    elif re.match(r"^sha256:\d+:[a-fA-F0-9]{64}:[a-fA-F0-9]{64}$", hash_string):
+        return "pbkdf2-sha256"
+    elif re.match(r"^\$argon2(id|d|i)\$v=\d+\$.*$", hash_string):
+        return "Argon2"
+    elif re.match(r"^[a-fA-F0-9]{40}$", hash_string):
+        return "RIPEMD-160"
+    else:
+        return "Unknown Hash"
 
 # ===============================================================================================
 # Unhash Word
@@ -62,6 +79,38 @@ def unhash_word(hash_string, hash_type, wordlist, output_file=None):
                 try:
                     if hash_type == 'bcrypt':
                         if bcrypt.checkpw(word.encode('utf-8'), hash_string.encode('utf-8')):
+                            found = True
+                            result = f"{hash_string}:{word}"
+                            print(Fore.GREEN + f"Hash Found: {result}")
+                            if output_file:
+                                output_file.write(result + '\n')
+                            break
+                    elif hash_type == 'NTLM':
+                        # Compute NTLM hash of the word
+                        h = hashlib.new('md4', word.encode('utf-16le')).digest()
+                        hash_result = binascii.hexlify(h).upper().decode()
+                        if hash_result == hash_string:
+                            found = True
+                            result = f"{hash_string}:{word}"
+                            print(Fore.GREEN + f"Hash Found: {result}")
+                            if output_file:
+                                output_file.write(result + '\n')
+                            break
+                    elif hash_type == 'Argon2':
+                        ph = PasswordHasher()
+                        try:
+                            if ph.verify(hash_string, word):
+                                found = True
+                                result = f"{hash_string}:{word}"
+                                print(Fore.GREEN + f"Hash Found: {result}")
+                                if output_file:
+                                    output_file.write(result + '\n')
+                                break
+                        except VerificationError:
+                            continue                                                          
+                    elif hash_type == 'whirlpool':
+                        h = whirlpool.new(word.encode('utf-8')).hexdigest()
+                        if h.upper() == hash_string:
                             found = True
                             result = f"{hash_string}:{word}"
                             print(Fore.GREEN + f"Hash Found: {result}")
@@ -105,17 +154,12 @@ def main():
     parser.add_argument("--hash", action='store_true', help="Hashing Mode")
     parser.add_argument("--unhash", action='store_true', help="Unhashing Mode")    
     parser.add_argument("Word", nargs='?', type=str, help="A word to process")
-    parser.add_argument("Hash", nargs='?', type=str, help="A hash to process")    
+    parser.add_argument("Hash", nargs='?', type=str, help="A hash to process")
     parser.add_argument("-f", "--file", help="Words file", type=str)
     parser.add_argument("-a", "--algorithm", help="Hash type", type=str)
     parser.add_argument("-w", "--wordlist", help="Wordlist file", type=str)
     parser.add_argument("-o", "--output", help="Output file", type=str)
     args = parser.parse_args()
-
-    # Show help if no arguments are provided
-    if len(sys.argv) == 1:
-        parser.print_help()
-        sys.exit(1)
 
     # ---------------------------------------------------------------------------    
     # Hashing Process
@@ -131,14 +175,14 @@ def main():
         elif args.file and args.algorithm:
             results = []
             print(f"{Fore.CYAN}Hash_Type: {args.algorithm}")
-            print(f"{Fore.WHITE}Processing words from file: {args.file}") 
+            print(f"Processing words from file: {args.file}") 
             with open(args.file, 'r') as file:
                 for line in file:
                     line = line.strip()
                     hash_func = getattr(hashlib, args.algorithm)
                     h = hash_func(line.encode('utf-8')).hexdigest()
                     result = f"{h}:{line}"
-                    print(Fore.GREEN + result)
+                    print(result)
                     results.append(result)
             # Save to output file if specified
             if args.output:
@@ -156,32 +200,28 @@ def main():
             if hash_type == "Unknown Hash":
                 print(Fore.RED + "Hash type could not be determined.")
             else:
-                print(Fore.CYAN + "Hash Type is: " + hash_type)
-                unhash_word(args.Word, hash_type, args.wordlist, None)
+                print(Fore.CYAN + "Hash Type is: " + hash_type)                    
+                unhash_word(args.Word, hash_type, args.wordlist)
 
         elif args.file:
-            output_file = open(args.output, mode='w', encoding='utf-8') if args.output else None
-            with open(args.file, mode='r', encoding='utf-8', errors='ignore') as file:
-                for line in file:
-                    line = line.strip()
-                    hash_type = detect_hash_type(line)
-                    print(Fore.CYAN + f"Hash Type is: {hash_type}")
-                    if hash_type == "Unknown Hash":
-                        print(Fore.RED + "Hash type could not be determined.")
-                    else:
-                        unhash_word(line, hash_type, args.wordlist, output_file)
-
-            if output_file:
-                output_file.close()
+            with open(args.output, mode='w', encoding='utf-8') as output_file:
+                with open(args.file, mode='r', encoding='utf-8', errors='ignore') as file:
+                    for line in file:
+                        line = line.strip()
+                        hash_type = detect_hash_type(line)
+                        print(Fore.CYAN + f"Hash Type is: {hash_type}")
+                        if hash_type == "Unknown Hash":
+                            print(Fore.RED + "Hash type could not be determined.")
+                        else:
+                            unhash_word(line, hash_type, args.wordlist, output_file)
                 print(Fore.GREEN + "Hashes saved to " + args.output)
         else:
             print(Fore.RED + "Hash file not provided.")
-
+    
     else:
         print(Fore.RED + "Error: Invalid mode.")
 
     print(Style.RESET_ALL)
-    
 
 
 # ===============================================================================================

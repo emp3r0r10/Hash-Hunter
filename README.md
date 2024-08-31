@@ -28,7 +28,7 @@ python3 script.py --unhash -w <wordlist> <hash>
 python3 script.py --unhash -w <wordlist> -f hashes_file
 ```
 
-## Install
+## Installation
 
 ```bash
 git clone https://github.com/emp3r0r10/Hash-Hunter.git
@@ -37,3 +37,22 @@ pip install -r requirements.txt
 python3 Hash-Hunter.py
 ```
 
+## Supported Hash Algorithms
+
+The script supports the following hash algorithms:
+
+1. md5
+2. sha1
+3. sha224
+4. sha256
+5. sha384
+6. sha512
+7. blake2b
+8. blake2s
+9. sha3_224
+10. sha3_256
+11. sha3_384
+12. sha3_512
+13. NTLM
+14. Argon2
+15. Whirlpool
