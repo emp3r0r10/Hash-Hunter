@@ -12,8 +12,8 @@ python3 script.py --hash --algorithm <algorithm> <word>
 
 **Hashing a File**:
 
-```
-python3 script.py --hash --algorithm <algorithm> -f words
+```bash
+python3 script.py --hash --algorithm <algorithm> -f words_file
 ```
 
 **Unhashing a Word**:
@@ -25,7 +25,7 @@ python3 script.py --unhash -w <wordlist> <hash>
 **Unhashing a File**:
 
 ```bash
-python3 script.py --unhash -w <wordlist> -f hashes
+python3 script.py --unhash -w <wordlist> -f hashes_file
 ```
 
 ## Install
