@@ -33,7 +33,7 @@ python3 script.py --unhash -w <wordlist> -f hashes
 ```bash
 git clone https://github.com/emp3r0r10/Hash-Hunter.git
 cd Hash-Hunter
-pip install requirements.txt
+pip install -r requirements.txt
 python3 Hash-Hunter.py
 ```
 
