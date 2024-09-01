@@ -56,3 +56,5 @@ The script supports the following hash algorithms:
 13. NTLM
 14. Argon2
 15. Whirlpool
+16. Jenkins
+17. crc32
