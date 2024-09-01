@@ -1,7 +1,6 @@
 # Hash-Hunter
 
-Hash-Hunter is a Python script designed for both hashing and unhashing processes. It offers a simple and efficient way to convert a word into its corresponding hash and, when possible, reverse a hash back into the original word using a wordlist.
-
+Hash-Hunter is a Python script designed for generating and cracking a wide range of hash types. It supports several well-known hashing algorithms and includes functionality to detect the type of a given hash.
 ## Usage
 
 **Hashing a Word**:
@@ -19,13 +18,13 @@ python3 script.py --hash --algorithm <algorithm> -f words_file
 **Unhashing a Word**:
 
 ```bash
-python3 script.py --unhash -w <wordlist> <hash>
+python3 script.py --crack -w <wordlist> <hash>
 ```
 
 **Unhashing a File**:
 
 ```bash
-python3 script.py --unhash -w <wordlist> -f hashes_file
+python3 script.py --crack -w <wordlist> -f hashes_file
 ```
 
 ## Installation
@@ -57,4 +56,4 @@ The script supports the following hash algorithms:
 14. Argon2
 15. Whirlpool
 16. Jenkins
-17. crc32
+17. CRC32
