@@ -3,13 +3,14 @@ import hashlib
 import binascii
 import re
 import argparse
+import sys
+import whirlpool
+import zlib
 from colorama import Fore, Style
 from Crypto.Hash import MD4
-import whirlpool
 from argon2 import PasswordHasher
 from passlib.utils.binary import ab64_encode
-import zlib
-# import tigerhash
+
 
 # ===============================================================================================
 # Jenkins One-at-a-Time Hash Function
@@ -35,17 +36,13 @@ def hash_word(word, hash_type):
         elif hash_type == "NTLM":
             h = hashlib.new('md4', word.encode('utf-16le')).digest()
             print(Fore.GREEN + binascii.hexlify(h).upper().decode())
-        elif hash_type == "Argon2":
+        elif hash_type == "argon2":
             ph = PasswordHasher()
             h = ph.hash(word)
             print(h)
         elif hash_type == "whirlpool":
             h = whirlpool.new(word.encode('utf-8')).hexdigest()
             print(Fore.GREEN + h)
-        elif hash_type == "tiger":
-            h = tigerhash.Tiger()
-            h.update(word.encode('utf-8'))
-            print(Fore.GREEN + h.digest().hex())
         elif hash_type == "jenkins":
             h = jenkins_one_at_a_time_hash(word.encode('utf-8'))
             print(Fore.GREEN + f"{h:08x}")
@@ -64,6 +61,7 @@ def hash_word(word, hash_type):
         print(Fore.RED + f"Error: {e}")
 
 
+
 # ===============================================================================================
 # Detect Hash
 def detect_hash_type(hash_string):
@@ -71,8 +69,8 @@ def detect_hash_type(hash_string):
         if all(c in '0123456789ABCDEF' for c in hash_string):
             return 'NTLM'
         return 'MD5'
-    if len(hash_string) == 128:
-        if hash_string.upper() and all(c in '0123456789ABCDEF' for c in hash_string): 
+    elif len(hash_string) == 128:
+        if hash_string.isupper() and all(c in '0123456789ABCDEF' for c in hash_string):
             return "whirlpool"
         return "SHA-512"
     elif len(hash_string) == 40 and re.match(r"^[a-fA-F0-9]{40}$", hash_string):
@@ -184,8 +182,6 @@ def main():
     # Help menu
     parser = argparse.ArgumentParser(formatter_class=CustomHelpFormatter)
     parser.add_argument("--hash", action='store_true', help="Hashing Mode")
-    # parser.add_argument("--unhash", action='store_true', help="Unhashing Mode")
-    # parser.add_argument("--generate", action='store_true', help="Generating Mode")
     parser.add_argument("--crack", action='store_true', help="Cracking Mode")    
     parser.add_argument("Word", nargs='?', type=str, help="A word to process")
     parser.add_argument("Hash", nargs='?', type=str, help="A hash to process")
@@ -193,6 +189,10 @@ def main():
     parser.add_argument("-a", "--algorithm", help="Hash type", type=str)
     parser.add_argument("-w", "--wordlist", help="Wordlist file", type=str)
     parser.add_argument("-o", "--output", help="Output file", type=str)
+    # Check if no arguments are provided or if the first argument is '-h'
+    if len(sys.argv) == 1 or sys.argv[1] == "-h":
+        parser.print_help()
+        sys.exit() 
     args = parser.parse_args()
 
     # ---------------------------------------------------------------------------    
@@ -226,7 +226,7 @@ def main():
                 print(f"{Fore.GREEN}Results saved to: {args.output}")
 
     # ---------------------------------------------------------------------------
-    # Unhashing Process
+    # Cracking Process
     elif args.crack:        
         print(f"{Fore.RED}Mode: Cracking")
         if args.Word:
@@ -238,7 +238,19 @@ def main():
                 unhash_word(args.Word, hash_type, args.wordlist)
 
         elif args.file:
-            with open(args.output, mode='w', encoding='utf-8') as output_file:
+            if args.output:
+                with open(args.output, mode='w', encoding='utf-8') as output_file:
+                    with open(args.file, mode='r', encoding='utf-8', errors='ignore') as file:
+                        for line in file:
+                            line = line.strip()
+                            hash_type = detect_hash_type(line)
+                            print(Fore.CYAN + f"Hash Type is: {hash_type}")
+                            if hash_type == "Unknown Hash":
+                                print(Fore.RED + "Hash type could not be determined.")
+                            else:
+                                unhash_word(line, hash_type, args.wordlist, output_file)
+                    print(Fore.GREEN + "Hashes saved to " + args.output)
+            else:
                 with open(args.file, mode='r', encoding='utf-8', errors='ignore') as file:
                     for line in file:
                         line = line.strip()
@@ -247,8 +259,8 @@ def main():
                         if hash_type == "Unknown Hash":
                             print(Fore.RED + "Hash type could not be determined.")
                         else:
-                            unhash_word(line, hash_type, args.wordlist, output_file)
-                print(Fore.GREEN + "Hashes saved to " + args.output)
+                            unhash_word(line, hash_type, args.wordlist)
+
         else:
             print(Fore.RED + "Hash file not provided.")
     
