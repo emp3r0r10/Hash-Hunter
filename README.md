@@ -1,6 +1,9 @@
 # Hash-Hunter
 
 Hash-Hunter is a Python script designed for generating and cracking a wide range of hash types. It supports several well-known hashing algorithms and includes functionality to detect the type of a given hash.
+
+![Help](D:\GitHub_Repos\Hash-Hunter\Screenshots\Help.png)
+
 ## Usage
 
 **Hashing a Word**:
