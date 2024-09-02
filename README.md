@@ -2,8 +2,6 @@
 
 Hash-Hunter is a Python script designed for generating and cracking a wide range of hash types. It supports several well-known hashing algorithms and includes functionality to detect the type of a given hash.
 
-![Help](https://github.com/emp3r0r10/Hash-Hunter/blob/main/Screenshots/Help.png)
-
 ## Usage
 
 **Hashing a Word**:
@@ -15,7 +13,7 @@ python3 script.py --hash --algorithm <algorithm> <word>
 **Hashing a File**:
 
 ```bash
-python3 script.py --hash --algorithm <algorithm> -f words_file
+python3 script.py --hash --algorithm <algorithm> -f <words_file>
 ```
 
 **Unhashing a Word**:
@@ -27,7 +25,7 @@ python3 script.py --crack -w <wordlist> <hash>
 **Unhashing a File**:
 
 ```bash
-python3 script.py --crack -w <wordlist> -f hashes_file
+python3 script.py --crack -w <wordlist> -f <hashes_file>
 ```
 
 ## Installation
