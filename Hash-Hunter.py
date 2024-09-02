@@ -42,7 +42,7 @@ def hash_word(word, hash_type):
             print(h)
         elif hash_type == "whirlpool":
             h = whirlpool.new(word.encode('utf-8')).hexdigest()
-            print(Fore.GREEN + h)
+            print(Fore.GREEN + h.upper())
         elif hash_type == "jenkins":
             h = jenkins_one_at_a_time_hash(word.encode('utf-8'))
             print(Fore.GREEN + f"{h:08x}")
