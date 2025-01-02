@@ -4,7 +4,6 @@ import binascii
 import re
 import argparse
 import sys
-import whirlpool
 import zlib
 from colorama import Fore, Style
 from Crypto.Hash import MD4
@@ -40,9 +39,6 @@ def hash_word(word, hash_type):
             ph = PasswordHasher()
             h = ph.hash(word)
             print(h)
-        elif hash_type == "whirlpool":
-            h = whirlpool.new(word.encode('utf-8')).hexdigest()
-            print(Fore.GREEN + h.upper())
         elif hash_type == "jenkins":
             h = jenkins_one_at_a_time_hash(word.encode('utf-8'))
             print(Fore.GREEN + f"{h:08x}")
@@ -70,8 +66,6 @@ def detect_hash_type(hash_string):
             return 'NTLM'
         return 'MD5'
     elif len(hash_string) == 128:
-        if hash_string.isupper() and all(c in '0123456789ABCDEF' for c in hash_string):
-            return "whirlpool"
         return "SHA-512"
     elif len(hash_string) == 40 and re.match(r"^[a-fA-F0-9]{40}$", hash_string):
         return "SHA-1"
@@ -129,15 +123,6 @@ def unhash_word(hash_string, hash_type, wordlist, output_file=None):
                                 break
                         except VerificationError:
                             continue                                                          
-                    elif hash_type == 'whirlpool':
-                        h = whirlpool.new(word.encode('utf-8')).hexdigest()
-                        if h.upper() == hash_string:
-                            found = True
-                            result = f"{hash_string}:{word}"
-                            print(Fore.GREEN + f"Hash Found: {result}")
-                            if output_file:
-                                output_file.write(result + '\n')
-                            break
                     elif hash_type == 'jenkins':
                         h = jenkins_one_at_a_time_hash(word.encode('utf-8'))
                         hash_result = f"{h:08x}"
